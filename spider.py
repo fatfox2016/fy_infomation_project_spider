@@ -2,43 +2,27 @@ import re
 import requests
 import xlrd
 import xlwt
-# import sys
-# reload(sys)
-# sys.setdefaultencoding("utf-8")
-
-def getDataList(page_num,key):
-    # get list of data
-    datas = []
-    for i in range(page_num):
-        data = {'pageSize':'240',
-                'channelCode':'sjcg',
-                'bType':'03',
-                'areaCode':'341200',
-                'key':key,
-                'pageNo':i}
-        datas.append(data)
-
-    return datas
+from processText import cleanData,matchWord,filterInfo,removeDuplicate
 
 class Spider(object):
     def __init__(self):
         print('start crawling...')
 
     def getSource(self,url,headers):
-        # get the web page source code
+        '''get the web page source code'''
         source = requests.get(url,headers)
         source.encoding = 'utf-8'
         # print(source.text)
         return source.text
 
     def getItemInfo(self,source):
-        # get each item information
+        '''get each item information'''
         # print(source)
         info = re.findall('<a style="margin-left:-105px;"(.*?)</li>\\r\\n\\t\\t',source.text,re.S)
         return info
 
     def getInfoDict(self,itemInfo):
-        # get the infomation of dictionary
+        '''get the infomation of dictionary'''
         info = {}
         info['title'] = re.search('title="(.*?)"',itemInfo,re.S).group(1)
         _link = re.search('target="_blank" href="(.*?)">',itemInfo,re.S).group(1)
@@ -46,6 +30,7 @@ class Spider(object):
         info['time'] = re.search('<span class="date">(.*?)</span>',itemInfo,re.S).group(1)
         info['status'] = 0
         return info
+
 
     def generatePageLink(self,url,total_page):
         # generate a page link
@@ -57,38 +42,8 @@ class Spider(object):
         return page_group
 
 
-def cleanData(data):
-    # 使用正则表达式清洗数据
-
-    _text = re.sub(r'</?\w+[^>]*>','',data)
-     # _text = re.sub(r'\p{P}+', ',', _text)
-    _text = re.sub("[():]+|[：，。？、（）]+", ",",_text)
-    _text = _text.replace('&nbsp;','')
-    _text = _text.replace('&mdash;','')
-    _text = _text.replace(' ',',')
-    _text = _text.replace('　',',')
-    _text = _text.replace('\r\n',',')
-    _text = _text.replace('\n',',')
-    for i in range(20):
-        _text = _text.replace(',,',',')
-
-    return _text
-
-def filterInfo(list,_text):
-    # the filter of infomation
-    for i in list:
-        filter = i + '(.*?),'
-        project_num = re.search(filter,_text,re.S)
-        if project_num:
-            value = project_num.group(1)
-            break
-        else:
-            value = 'None'
-            pass
-
-    return value
-
 def greatInfoDict(url,pageNum,datas,headers):
+    # great dictionary of the project infomation
     project_infomation = []
     project_spider = Spider()
 
@@ -116,20 +71,23 @@ def greatInfoDict(url,pageNum,datas,headers):
                 each['project_num'] = filterInfo(project_num_list,_text)
                 print(each['project_num'])
 
-                each['purchaser'] = filterInfo(purchaser_list,_text)
-                print(each['purchaser'])
+                purchaser_r = matchWord(purchaser_names,_text)
+                # print(purchaser_r)
+                if purchaser_r == None:
+                    each['purchaser'] = filterInfo(purchaser_list,_text)
+                else:
+                    each['purchaser'] = purchaser_r
 
-                each['supplier'] = filterInfo(supplier_list,_text)
-                print(each['supplier'])
+                supplier_r = matchWord(supplier_names,_text)
+                if supplier_r:
+                    each['supplier'] = supplier_r
+                else:
+                    each['supplier'] = filterInfo(supplier_list,_text)
 
-                # each['text'] = _text
-                # each['area'] = area
                 each['status'] = 1
                 i += 1
             except:
                 each['status'] = 0
-
-
     return project_infomation
 
 def saveExcal(area,filename,project_infomation):
@@ -152,6 +110,19 @@ def saveExcal(area,filename,project_infomation):
 
     file.save(filename)
 
+def getDataList(page_num,key):
+    # get list of data
+    datas = []
+    for i in range(page_num):
+        data = {'pageSize':'300',
+                'channelCode':'sjcg',
+                'bType':'03',
+                'areaCode':'341200',
+                'key':key,
+                'pageNo':i}
+        datas.append(data)
+    # print(datas)
+    return datas
 
 if __name__ == '__main__':
 
@@ -160,19 +131,24 @@ if __name__ == '__main__':
             'AppleWebKit/537.36 (KHTML, like Gecko) '
             'Chrome/58.0.3029.110 Safari/537.36'}
 
+
     url = 'http://www.ahzfcg.gov.cn/mhxt/MhxtSearchBulletinController.zc?method=bulletinChannelRightDown'
-    pageNum = 1
+    pageNum = 10
 
     project_num_list = ['备案编号','备案编号,','项目编号,','项目编号','招标编号,','招标编码,'
                         '访问次数,颍上县黄坝乡人民政府路灯采购项目',
                         '访问次数,颍上县司法局办公设备采购项目,二次,','采购项目,','编号,']
     purchaser_list = ['采购人名称,','采购人,','采购单位,','采购单位','采购人','招标人,','招标人','采购代理机构,','采购代理机构',
                       '招,标,人','特此公告,','特此公示,']
-    supplier_list = ['第一中标候选单位,','预中标人,','成交供应商及成交金额,','供应商为,','供应商名称,','中标供应商,','中标供应商','成交供应商,',
-                     '中标人名称,','中标人,','中标推荐单位,','中标候选人,报价,元,1,','中标候选单位,',
+    supplier_list = ['第一中标候选单位,','预中标人,','成交供应商及成交金额,','供应商为,','供应商名称,','中标供应商,','中标供应商',
+                     '成交供应商,','中标人名称,','中标人,','中标推荐单位,','中标候选人,报价,元,1,','中标候选单位,',
                      '第一中标候选人,','中标候选单位名称第一名,','成交候选人,','成交人,','候选人,','成交单位,',
                      '成交供应商','中标候选人,','中标候选人,','第一、二包,','第一预中标人,','一包,','最终确定,'
                      ]
+
+    purchaser_names = removeDuplicate('purchaser.txt')
+
+    supplier_names = removeDuplicate('supplier.txt')
 
     # datas = getDataList(pageNum,key = '公安') # get the list of datas
     # project_list = greatInfoDict(url,pageNum,datas,headers)
@@ -194,13 +170,23 @@ if __name__ == '__main__':
     # project_list = greatInfoDict(url,pageNum,datas,headers)
     # saveExcal('fuyang','环境_fy_WinningInfomation.xls',project_list)
 
-    datas = getDataList(pageNum,key = '智能') # get the list of datas
-    project_list = greatInfoDict(url,pageNum,datas,headers)
-    saveExcal('fuyang','智能_fy_WinningInfomation.xls',project_list)
+    # datas = getDataList(pageNum,key = '智能') # get the list of datas
+    # project_list = greatInfoDict(url,pageNum,datas,headers)
+    # saveExcal('fuyang','智能_fy_WinningInfomation.xls',project_list)
 
 
     # datas = getDataList(pageNum,key = '信息') # get the list of datas
     # project_list = greatInfoDict(url,pageNum,datas,headers)
     # saveExcal('fuyang','信息_fy_WinningInfomation.xls',project_list)
+
+    # datas = getDataList(pageNum,key = '智慧') # get the list of datas
+    # project_list = greatInfoDict(url,pageNum,datas,headers)
+    # saveExcal('fuyang','智慧_fy_WinningInfomation.xls',project_list)
+
+    datas = getDataList(pageNum,key = '系统') # get the list of datas
+    project_list = greatInfoDict(url,pageNum,datas,headers)
+    saveExcal('fuyang','系统_fy_WinningInfomation.xls',project_list)
+
+
 
 

@@ -2,7 +2,7 @@
 - 分析当前政府招标市场信息，生成市场情况报告
 
 ## 目标分析
-- 目标网站：jyzx.fy.gov.cn,http://www.ahzfcg.gov.cn/
+- 目标网站：http://www.ahzfcg.gov.cn/,(参考后备:http://jyzx.fy.gov.cn)
 - 有效资料：招标公告，中标公告
 - 网页类型：动态页面，AJAX
 
@@ -32,6 +32,16 @@
   + 使用xlwt库，把信息字典存为.xls文件。
  
 ## 代码仓库
-- https://github.com/fatfox2016/fy_infomation_project_spider
+- 网址:https://github.com/fatfox2016/fy_infomation_project_spider
+
+- spider.py : 爬虫主程序
+    + 重要参数：
+        * url : 目标网站网址
+        * headers : 模拟浏览器信息
+        * datas : 请求数据信息
+        * pageNum : 页面数
+        * key ：搜索关键字
+
+- proessText.py : 处理文本信息模块文件
 
 ## 分析数据

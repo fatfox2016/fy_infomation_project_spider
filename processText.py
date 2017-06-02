@@ -64,14 +64,14 @@ def listToFile(list,filename):
 
 if __name__ == '__main__':
 
-    purchaser_list = removeDuplicate('purchaser.txt')
-    print(len(purchaser_list),purchaser_list[:10])
+    # purchaser_list = removeDuplicate('purchaser.txt')
+    # print(len(purchaser_list),purchaser_list[:10])
 
     supplier_list = removeDuplicate('supplier.txt')
     print(len(supplier_list),supplier_list[:10])
 
     # filename = str(datetime.date.today()) + '-purchaser.txt'
-    listToFile(purchaser_list,'purchaser.txt')
+    # listToFile(purchaser_list,'purchaser.txt')
 
     # filename1 = str(datetime.date.today()) + '-supplier.txt'
     listToFile(supplier_list,'supplier.txt')
